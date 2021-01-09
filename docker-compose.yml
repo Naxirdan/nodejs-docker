@@ -1,0 +1,16 @@
+version: "3.7"
+
+services:
+  app-node:
+    container_name: app-node
+    build: .
+    ports:
+      - "127.0.0.88:9000:9000"
+    volumes:
+      - ./app/:/home/node/app:rw
+
+volumes:
+  app: {}
+
+networks:
+    isolated_nw:
