@@ -1,40 +1,48 @@
 FROM alpine:3.12.3
 
-LABEL authors="Adrian Cejudo Garcia" issues="https://github.com/Naxirdan/nodejs-docker/issues" 
+ARG NVM_VERSION=v0.37.2
 
-ENV NODE_VERSION="v14.15.4" PYTHON_VERSION="python3"
+ARG NPM_VERSION=14.15.1
 
-RUN apk upgrade --no-cache -U && \
-  apk add --no-cache curl make gcc g++ ${PYTHON_VERSION} linux-headers binutils-gold gnupg libstdc++
+ARG HOME_DIR="/home/node"
 
-RUN curl -sfSLO https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.tar.gz && \
-  tar -xf node-${NODE_VERSION}.tar.gz && \
-  cd node-${NODE_VERSION} && \
-  ./configure --prefix=/usr ${CONFIG_FLAGS} && \
-  make -j$(getconf _NPROCESSORS_ONLN) && \
-  make install
-
-RUN apk del curl make gcc g++ ${NODE_BUILD_PYTHON} linux-headers binutils-gold gnupg ${DEL_PKGS} && \
-  rm -rf ${RM_DIRS} /node-${NODE_VERSION}* /SHASUMS256.txt /tmp/* \
-    /usr/share/man/* /usr/share/doc /root/.npm /root/.node-gyp /root/.config \
-    /usr/lib/node_modules/npm/man /usr/lib/node_modules/npm/doc /usr/lib/node_modules/npm/docs \
-    /usr/lib/node_modules/npm/html /usr/lib/node_modules/npm/scripts && \
-  { rm -rf /root/.gnupg || true; }
+ARG APP_DIR="/home/node/app"
 
 RUN addgroup -S node && adduser -S node -G node
 
+RUN apk add nodejs -U curl \
+bash \
+ca-certificates \
+openssl \
+ncurses \
+coreutils \
+python2 \
+make \
+gcc \
+g++ \
+libgcc \
+linux-headers \
+grep \
+util-linux \
+binutils \
+findutils 
+
 USER node
 
-RUN mkdir /home/node/app
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
 
-WORKDIR /home/node/app
+RUN chown -R node:node ${HOME_DIR}
 
-COPY --chown=node:node ./app/package-lock.json ./app/package.json ./
+RUN mkdir ${APP_DIR}
 
-RUN npm ci
+WORKDIR ${HOME_DIR}
+
+COPY --chown=node:node ./app/package-lock.json ./app/package.json ./app/
+
+COPY --chown=node:node .bashrc node_init.sh ${HOME_DIR}/
+
+RUN chmod ugo+x ${HOME_DIR}/.bashrc ${HOME_DIR}/node_init.sh
 
 COPY --chown=node:node . .
 
-EXPOSE 9000
-
-CMD ["node", "index.js"]
+ENTRYPOINT ["bash", "node_init.sh"]
