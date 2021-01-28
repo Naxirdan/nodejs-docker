@@ -6,7 +6,7 @@ var path = __dirname + '/views/';
 
 // Constants
 const PORT = 9000;
-const HOST = '0.0.0.0';
+const HOST = '127.0.0.1';
 
 router.use(function (req,res,next) {
   console.log("/" + req.method);
